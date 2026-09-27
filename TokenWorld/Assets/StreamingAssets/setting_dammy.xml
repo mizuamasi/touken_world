@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<Setting xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <_postion>
+    <x>0</x>
+    <y>0</y>
+    <z>7.5</z>
+  </_postion>
+  <_rotation>135</_rotation>
+  <_scale>372.7</_scale>
+  <_threshold>0.5</_threshold>
+  <_min>0.05</_min>
+  <_area_center>
+    <x>0</x>
+    <y>0</y>
+    <z>-7.5</z>
+  </_area_center>
+  <_area_extents>
+    <x>12.5</x>
+    <y>0</y>
+    <z>6.5</z>
+  </_area_extents>
+  <_ip>192.168.0.112</_ip>
+  <_port>10940</_port>
+</Setting>
