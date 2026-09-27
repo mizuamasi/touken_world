@@ -1,0 +1,52 @@
+# Detect text automatically; preserve existing CRLF files without renormalizing.
+* text=auto
+
+# Keep repository configuration consistent across platforms.
+.gitattributes text eol=lf
+.gitignore text eol=lf
+/README.md text eol=lf
+*.cs diff=csharp
+
+# Unity .asset and .prefab files can be YAML or binary. Keep auto detection.
+# Do not force text conversion or text merging for these extensions.
+
+# Images and source artwork
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.tga binary
+*.tif binary
+*.tiff binary
+*.psd binary
+*.exr binary
+*.hdr binary
+
+# Audio and video
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.mp4 binary
+*.mov binary
+
+# Models, Live2D source files and fonts
+*.fbx binary
+*.spm binary
+*.blend binary
+*.moc3 binary
+*.cmo3 binary
+*.can3 binary
+*.ttf binary
+*.otf binary
+
+# Native plugins and archives (kept in Git when required by Assets)
+*.dll binary
+*.so binary
+*.a binary
+*.bc binary
+*.bundle binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.rar binary
+*.unitypackage binary

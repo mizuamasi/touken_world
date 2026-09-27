@@ -1,0 +1,17 @@
+# OS metadata (applies to the repository and Unity project)
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Local IDE caches and per-user settings
+.vs/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.DotSettings.user
+*.opendb
+*.VC.db
+
+# Unity-specific rules live in TokenWorld/.gitignore.
