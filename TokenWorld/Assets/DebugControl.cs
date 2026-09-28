@@ -18,6 +18,7 @@ public class DebugControl : SingletonMonoBehaviour<DebugControl>
 		public int _port;
 	}
 
+	[System.Serializable]
 	public class ParamSetting {
 		public int _reaction_frequency = 2;
 		public float _reaction_interval = 3f;
@@ -34,10 +35,18 @@ public class DebugControl : SingletonMonoBehaviour<DebugControl>
 	[SerializeField] GameObject _debug_ui;
 	[SerializeField] UrgDebug _urgDebug;
 	[SerializeField] string _setting_file_path;
+	[SerializeField, Tooltip("展示用の外部XML設定を読み込む。開発用シーンではOFF。")]
+	bool _loadExternalSettings = true;
+	[SerializeField] ParamSetting _localParameters = new ParamSetting();
 
 	[SerializeField] Text _ui_pos, _ui_rot, _ui_sca, _ui_th, _ui_min, _ui_area_p, _ui_area_s, _ui_ip, _ui_port;
 
 	private void Awake() {
+		if (!_loadExternalSettings) {
+			_param_setting = _localParameters ?? new ParamSetting();
+			BG_Control.Instance._scene_minute = _param_setting._scn_minute;
+			return;
+		}
 
 		// パラメータのパスを作成
 		_param_setting_file = _setting_file_path + @"_setting.xml";
@@ -130,6 +139,7 @@ public class DebugControl : SingletonMonoBehaviour<DebugControl>
 	}
 
 	public void SaveURGSetting() {
+		if (!_loadExternalSettings) return;
 		URGSetting setting = new URGSetting() {
 			_postion = _urgDebug.Postion,
 			_rotation = _urgDebug.Rotation,

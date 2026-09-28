@@ -78,10 +78,12 @@ namespace Klak.Spout
                 // render buffer functionality), so we temporarily allocate a
                 // render texture as a middleman, blit the source to it, then
                 // copy it to the shared texture using the CopyTexture API.
+                var previousActive = RenderTexture.active;
                 var tempRT = RenderTexture.GetTemporary
                     (_sharedTexture.width, _sharedTexture.height);
                 Graphics.Blit(source, tempRT, _blitMaterial, 0);
                 Graphics.CopyTexture(tempRT, _sharedTexture);
+                RenderTexture.active = previousActive;
                 RenderTexture.ReleaseTemporary(tempRT);
             }
         }

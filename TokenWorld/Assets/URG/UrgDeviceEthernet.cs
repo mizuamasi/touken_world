@@ -31,6 +31,11 @@ public class UrgDeviceEthernet : UrgDevice
     public Action<List<long>> onReadMD;
     public Action<List<long>, List<long>> onReadME;
 
+    public bool IsConnected
+    {
+        get { return tcpClient != null && tcpClient.Client != null && tcpClient.Connected; }
+    }
+
 	public void StartTCP(string ip = "192.168.0.10", int port = 10940)
     {
 //		messageQueue = Queue.Synchronized(new Queue());
@@ -49,9 +54,8 @@ public class UrgDeviceEthernet : UrgDevice
             
 			ListenForClients();
         } catch (Exception ex) {
-            Debug.Log(ex.Message);
-        } finally {
-
+            DeInit();
+            Debug.LogWarning("URG connection failed: " + ex.Message);
         }
     }
 
@@ -66,25 +70,32 @@ public class UrgDeviceEthernet : UrgDevice
 	
 	void DeInit()
 	{
-		if(tcpClient != null){
-			if( tcpClient.Connected ){
-				NetworkStream stream = tcpClient.GetStream();
-				if(stream != null){
-					stream.Close();
-				}
-			}
-			tcpClient.Close();
-		}
-		
-		if(this.clientThread != null){
-			this.clientThread.Abort();
-		}
+		TcpClient client = tcpClient;
+		tcpClient = null;
+		if (client != null)
+			client.Close();
+
+		Thread thread = clientThread;
+		clientThread = null;
+		if (thread != null && thread.IsAlive)
+			thread.Abort();
 	}
 
 	public void Write(string scip)
 	{
-		NetworkStream stream = tcpClient.GetStream();
-		write(stream, scip);
+		if (!IsConnected)
+			return;
+
+		try {
+			NetworkStream stream = tcpClient.GetStream();
+			write(stream, scip);
+		} catch (InvalidOperationException ex) {
+			DeInit();
+			Debug.LogWarning("URG write failed: " + ex.Message);
+		} catch (System.IO.IOException ex) {
+			DeInit();
+			Debug.LogWarning("URG write failed: " + ex.Message);
+		}
 	}
 
 	private void ListenForClients()

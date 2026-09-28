@@ -10,10 +10,21 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
     public Bounds sensingArea;
 
     [Header("sensing result")]
-    public List<SensedObject> sensedObjs;
+    // Published on the main thread. Consumers may keep a snapshot, but must not edit it.
+    public List<SensedObject> sensedObjs = new List<SensedObject>();
     public Material mat;
+    public bool drawDetectionMesh = true;
 
-    object lockObj;
+    readonly object lockObj = new object();
+    List<SensedObject> pendingSensorObjects;
+    bool simulationEnabled;
+    bool inputPaused;
+    int inputGeneration;
+
+    public bool SimulationEnabled
+    {
+        get { lock (lockObj) return simulationEnabled; }
+    }
 
     UrgDeviceEthernet urg;
     UrgControl urgControl;
@@ -43,20 +54,79 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
 
     private void Start()
     {
+        if (sensedObjs == null)
+            sensedObjs = new List<SensedObject>();
+        verticesData = new List<Vector3>();
         urgControl = GetComponent<UrgControl>();
         urg = GetComponent<UrgDeviceEthernet>();
-        urg.onReadMD += OnReadMD;
-        urg.onReadME += OnReadME;
-
-        sensedObjs = new List<SensedObject>();
-        lockObj = new object();
-        verticesBuffer = new ComputeBuffer(1080, sizeof(float) * 3);
-        verticesData = new List<Vector3>();
+        if (urg != null)
+        {
+            urg.onReadMD += OnReadMD;
+            urg.onReadME += OnReadME;
+        }
     }
 
     private void Update()
     {
+        lock (lockObj)
+        {
+            if (!simulationEnabled && !inputPaused && pendingSensorObjects != null)
+                sensedObjs = pendingSensorObjects;
+            pendingSensorObjects = null;
+        }
         DrawMesh();
+    }
+
+    /// <summary>
+    /// Selects detected-position simulation. This does not simulate URG raw ranges or TCP.
+    /// Call from the main thread before UrgControl.Start when enabling simulation.
+    /// </summary>
+    public void SetSimulationEnabled(bool enabled)
+    {
+        lock (lockObj)
+        {
+            simulationEnabled = enabled;
+            inputGeneration++;
+            pendingSensorObjects = null;
+            sensedObjs = new List<SensedObject>();
+        }
+    }
+
+    public void SetInputPaused(bool paused)
+    {
+        lock (lockObj)
+        {
+            if (inputPaused == paused)
+                return;
+            inputPaused = paused;
+            inputGeneration++;
+            pendingSensorObjects = null;
+            sensedObjs = new List<SensedObject>();
+        }
+    }
+
+    /// <summary>Publishes a copied snapshot of simulated local XZ detection positions.</summary>
+    public void SetSimulationPoints(IList<Vector3> localPoints, float width = 0.5f)
+    {
+        lock (lockObj)
+        {
+            if (!simulationEnabled)
+                return;
+
+            var objects = new List<SensedObject>();
+            if (!inputPaused && localPoints != null)
+            {
+                var halfWidth = Vector3.right * Mathf.Max(0.01f, width) * 0.5f;
+                for (int i = 0; i < localPoints.Count; i++)
+                {
+                    Vector3 point = localPoints[i];
+                    point.y = sensingArea.center.y;
+                    if (sensingArea.Contains(point))
+                        objects.Add(new SensedObject { center = point, p0 = point - halfWidth, p1 = point + halfWidth });
+                }
+            }
+            sensedObjs = objects;
+        }
     }
 
     private void OnDrawGizmos()
@@ -65,14 +135,15 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(sensingArea.center, sensingArea.size);
 		Gizmos.color = Color.green;
-        if (lockObj != null)
-            lock (lockObj)
-                for (var i = 0; i < sensedObjs.Count; i++)
-                {
-                    var so = sensedObjs[i];
-                    Gizmos.DrawLine(so.p0, so.center);
-                    Gizmos.DrawLine(so.center, so.p1);
-                }
+        if (sensedObjs != null)
+        {
+            for (var i = 0; i < sensedObjs.Count; i++)
+            {
+                var so = sensedObjs[i];
+                Gizmos.DrawLine(so.p0, so.center);
+                Gizmos.DrawLine(so.center, so.p1);
+            }
+        }
 
 		Gizmos.color = Color.cyan;
 		Gizmos.DrawWireSphere(Vector3.zero, 0.4f);
@@ -80,26 +151,38 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
 
     private void OnDestroy()
     {
-        urg.onReadMD -= OnReadMD;
-        urg.onReadME -= OnReadME;
+        if (urg != null)
+        {
+            urg.onReadMD -= OnReadMD;
+            urg.onReadME -= OnReadME;
+        }
         if (verticesBuffer != null)
             verticesBuffer.Release();
+        if (_mesh != null)
+            Destroy(_mesh);
     }
 
     void DrawMesh()
     {
-        lock (lockObj)
-        {
-            verticesData.Clear();
-            for (var i = 0; i < sensedObjs.Count; i++)
-                verticesData.AddRange(sensedObjs[i].vertices);
-            verticesBuffer.SetData(verticesData);
-            mat.SetInt("_VCount", sensedObjMesh.vertexCount);
-            mat.SetBuffer("_VBuffer", verticesBuffer);
-            var matrices = Enumerable.Repeat(transform.localToWorldMatrix, sensedObjs.Count).ToList();
-            Graphics.DrawMeshInstanced(sensedObjMesh, 0, mat, matrices);
-        }
+        if (!drawDetectionMesh || mat == null || !mat.enableInstancing || sensedObjs == null || sensedObjs.Count == 0 ||
+            verticesData == null || !SystemInfo.supportsInstancing || !SystemInfo.supportsComputeShaders)
+            return;
 
+        verticesData.Clear();
+        int count = Mathf.Min(sensedObjs.Count, 1023);
+        for (var i = 0; i < count; i++)
+            verticesData.AddRange(sensedObjs[i].vertices);
+        if (verticesBuffer == null || verticesBuffer.count < verticesData.Count)
+        {
+            if (verticesBuffer != null)
+                verticesBuffer.Release();
+            verticesBuffer = new ComputeBuffer(Mathf.Max(1080, verticesData.Count), sizeof(float) * 3);
+        }
+        verticesBuffer.SetData(verticesData);
+        mat.SetInt("_VCount", sensedObjMesh.vertexCount);
+        mat.SetBuffer("_VBuffer", verticesBuffer);
+        var matrices = Enumerable.Repeat(transform.localToWorldMatrix, count).ToList();
+        Graphics.DrawMeshInstanced(sensedObjMesh, 0, mat, matrices);
     }
 
     void GetPointFromDistance(int step, float distance, ref Vector3 pos)
@@ -113,6 +196,14 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
         if (distances == null || distances.Count < 1)
             return;
 
+        int generation;
+        lock (lockObj)
+        {
+            if (simulationEnabled || inputPaused)
+                return;
+            generation = inputGeneration;
+        }
+
         Vector3 prevP = Vector3.zero;
         Vector3 checkP = Vector3.zero;
         Vector3 currentP = Vector3.zero;
@@ -120,7 +211,7 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
         int accumCount = 0;
         bool isObj = false;
 
-        sensedObjs.Clear();
+        var detectedObjects = new List<SensedObject>();
 
         GetPointFromDistance(0, distances[0], ref prevP);
         for (var i = 0; i < distances.Count; i++)
@@ -133,7 +224,7 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
                 if (objThreshold * objThreshold < (currentP - prevP).sqrMagnitude && sensingArea.Contains(currentP))//new obj
                 {
                     if (minWidth * minWidth < (prevP - checkP).sqrMagnitude)
-                        sensedObjs.Add(new SensedObject() { p0 = checkP, p1 = prevP, center = accum / accumCount });
+                        detectedObjects.Add(new SensedObject() { p0 = checkP, p1 = prevP, center = accum / accumCount });
                     checkP = currentP;
                     accum = currentP;
                     isObj = true;
@@ -142,7 +233,7 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
                 else if (!sensingArea.Contains(currentP))//lost obj
                 {
                     if (minWidth * minWidth < (prevP - checkP).sqrMagnitude)
-                        sensedObjs.Add(new SensedObject() { p0 = checkP, p1 = prevP, center = accum / accumCount });
+                        detectedObjects.Add(new SensedObject() { p0 = checkP, p1 = prevP, center = accum / accumCount });
                     isObj = false;
                     accumCount = 0;
                 }
@@ -163,6 +254,13 @@ public class UrgSensing : SingletonMonoBehaviour<UrgSensing>
                 }
             }
             prevP = currentP;
+        }
+
+        // The receive thread never changes the list being enumerated by scene scripts.
+        lock (lockObj)
+        {
+            if (!simulationEnabled && !inputPaused && generation == inputGeneration)
+                pendingSensorObjects = detectedObjects;
         }
     }
     void OnReadME(List<long> distances, List<long> strengths)

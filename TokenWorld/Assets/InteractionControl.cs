@@ -19,6 +19,8 @@ public class InteractionControl : MonoBehaviour
 	[SerializeField] int _delete_frmae;
 	[SerializeField] ParticleSystem _hamon_effect;
 	private List<Unit> _units = new List<Unit>();
+	public int ActiveUnitCount { get { return _units.Count; } }
+	public void ClearInteractions() { _units.Clear(); }
 
 	// Start is called before the first frame update
 	void Start() {

@@ -58,6 +58,8 @@ public class BG_Control : SingletonMonoBehaviour<BG_Control>
 
 	[SerializeField]
 	string _bg_data_path;
+	[SerializeField] bool _loadExternalImages = true;
+	[SerializeField] bool _autoChangeScene = true;
 
 	[SerializeField]
 	BG_Scene[] _scenes;
@@ -79,6 +81,7 @@ public class BG_Control : SingletonMonoBehaviour<BG_Control>
 
 		// 画像データ読み込み
 		foreach(BG_Scene scn in _scenes) {
+			if (!_loadExternalImages) continue;
 			if(File.Exists(_bg_data_path + scn._logo_path)) {
 				scn._logo_img = ReadImage.ReadSprite(_bg_data_path + scn._logo_path);
 			}
@@ -105,13 +108,18 @@ public class BG_Control : SingletonMonoBehaviour<BG_Control>
     void Update()
     {
 		if (Input.GetKeyDown(KeyCode.B)) {
-			StartCoroutine(ChangeScene());
+			NextScene();
 		}
 
-		if((DateTime.Now - _change_time).TotalMinutes > _scene_minute) {
-			StartCoroutine(ChangeScene());
-			_change_time = DateTime.Now;
+		if(_autoChangeScene && (DateTime.Now - _change_time).TotalMinutes > _scene_minute) {
+			NextScene();
 		}
+	}
+
+	public void NextScene() {
+		if (_is_changeScene) return;
+		_change_time = DateTime.Now;
+		StartCoroutine(ChangeScene());
 	}
 
 	IEnumerator ChangeScene() {

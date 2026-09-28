@@ -18,6 +18,8 @@ using System.Collections.Generic;
 
 
 public class SchoolController:MonoBehaviour{
+	// Disable direct clicks when using shared classroom input.
+	public bool _mouseInteraction = true;
 	
 	public SchoolChild[] _childPrefab;			// Assign prefab with SchoolChild script attached
 	public bool _groupChildToNewTransform;	// Parents fish transform to school transform
@@ -97,7 +99,7 @@ public class SchoolController:MonoBehaviour{
 			UpdateFishAmount();
 		}
 
-		if (Input.GetMouseButtonDown(0) &&
+		if (_mouseInteraction && Input.GetMouseButtonDown(0) &&
 			!BG_Control.Instance._is_changeScene) {
 			RaycastHit hit;
 			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); //マウスのポジションを取得してRayに代入

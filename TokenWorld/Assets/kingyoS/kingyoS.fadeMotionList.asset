@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 403ae2dd693bb1d4b924f6b8d206b053, type: 3}
   m_Name: kingyoS.fadeMotionList
   m_EditorClassIdentifier: 
-  MotionInstanceIds: 6678ffff54660000b6540000
+  MotionInstanceIds: 6678ffff54660000b6540000568d0000
   CubismFadeMotionObjects:
+  - {fileID: 11400000, guid: e28248cef9c126c4b8faa722ab83e63c, type: 2}
   - {fileID: 11400000, guid: e28248cef9c126c4b8faa722ab83e63c, type: 2}
   - {fileID: 11400000, guid: e28248cef9c126c4b8faa722ab83e63c, type: 2}
   - {fileID: 11400000, guid: e28248cef9c126c4b8faa722ab83e63c, type: 2}

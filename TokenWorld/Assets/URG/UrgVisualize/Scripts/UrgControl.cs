@@ -24,13 +24,17 @@ public class UrgControl : MonoBehaviour
     void Start()
     {
         urg = GetComponent<UrgDeviceEthernet>();
+        var sensing = GetComponent<UrgSensing>();
+        if (urg == null || (sensing != null && sensing.SimulationEnabled))
+            return;
         urg.StartTCP(ip, port);
-        urg.Write(SCIP_library.SCIP_Writer.MD(startStep, endStep));
+        if (urg.IsConnected)
+            urg.Write(SCIP_library.SCIP_Writer.MD(startStep, endStep));
     }
 
     private void OnDrawGizmosSelected()
     {
-        if (urg != null && 0 < urg.distances.Count)
+        if (urg != null && urg.distances != null && 0 < urg.distances.Count)
         {
             distances.Clear();
             distances.AddRange(urg.distances);

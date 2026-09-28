@@ -1,0 +1,58 @@
+# I/O接続リファレンス
+
+Unity **2022.3.62f2** で `TokenWorld/` を開きます。以下の `Assets/` はこのプロジェクト内のパスです。
+
+## 起動
+
+メニューの **TokenWorld > Open development scene** で `Assets/Workspace/Scenes/Workspace.unity` を開き、Play します。
+Hierarchy の **Workspace** に入力とプレビュー、子の **Content** に出力を置いています。作品の素材・スクリプトは任意のフォルダで管理できます。
+
+## 入力とプレビュー
+
+初期状態はマウス入力です。Game ビューの映像内を左ボタンで押す・ドラッグすると、水色の十字で検出位置を表示します。
+自動入力では1〜3点を動かせます。どちらも URG 実機や外部設定ファイルは不要です。
+
+| 操作 | キー |
+| --- | --- |
+| マウス / 自動に切り替える | `1` / `2` |
+| 入力を止める・再開する | `Space` |
+| 季節を変える | `B` |
+| 操作パネルを表示・非表示にする | `H` |
+
+キー操作時は Game ビューにフォーカスします。**クリア**は検出位置と追跡状態を消し、入力を停止します。再開は **入力を再開** または `Space` です。
+シミュレーションの対象は検出位置で、生のレーザー計測や遮蔽は再現しません。
+
+## 入力から出力への接続
+
+`Workspace` の **InteractionInput** が Mouse / Automatic / Sensor を共通のワールド座標に変換します。出力側で入力機器を区別する必要はありません。
+
+| 接続口 | 内容 |
+| --- | --- |
+| PositionUpdated（Inspector: Position Updated） | 検出位置を `Vector3` で通知。入力点ごとに毎フレーム呼び出す |
+| InputCleared（Inspector: Input Cleared） | 入力のクリア通知。残っている表示の解除などに使う |
+| Positions | 最新の全検出位置を `IReadOnlyList<Vector3>` で参照するC#用プロパティ |
+
+`Positions` は読み取り専用のスナップショットで、取得した一覧は次のフレームでも書き換わりません。座標に人物IDは含みません。`InputCleared` は入力点の消失・停止・切替・コンポーネント無効化により、入力点がある状態から0件になったときに一度だけ通知します。0件のフレームが続いても繰り返しません。
+
+座標を受け取る `public void React(Vector3 worldPosition)` を用意し、対象の GameObject を **Position Updated** へドラッグして **Dynamic Vector3** からメソッドを選択します。
+クリア処理は `public void Clear()` のような引数なしのメソッドを **Input Cleared** に登録します。複数点をまとめて処理する場合は `Positions` を参照します。
+
+## 任意Prefabの出力
+
+`Workspace > Content` の **PrefabOutput.React** は Position Updated に接続済みです。**Reaction Prefab** は初期状態で空のため、追加の描画はありません。任意の Prefab を割り当てると検出位置に生成します。
+
+| 設定 | 内容 |
+| --- | --- |
+| Reaction Prefab | 検出位置に生成する Prefab |
+| Interval | 生成間隔。すべての入力点で共有 |
+| Lifetime | 生成物を消すまでの秒数 |
+| Height Above Input | 入力面からの高さ。水面や背景に隠れる場合に調整 |
+
+独自の出力を使う場合はイベントの接続先を追加・置き換えます。Play 中の Inspector の変更は原則として停止すると戻るため、残す設定は停止後に保存します。
+
+## 実センサーと展示
+
+Play を停止し、`Workspace` の **InteractionInput > Mode** を **Sensor** にしてから Play します。対応する URG 実機、ネットワーク接続、IP / Port と位置・回転・縮尺・検出範囲の調整が必要です。実機での通信・校正は未検証です。
+制作シーンは外部画像の読み込み、季節の自動切替、Spout出力を初期状態で無効にしています。既存の展示用シーンは `Assets/Scenes/Main.unity` です。
+
+反応が出ない場合は、入力の停止状態、Reaction Prefab、Position Updated の登録先を確認します。コンパイルエラーは **Window > General > Console** で確認できます。

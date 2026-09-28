@@ -24,7 +24,7 @@ Tags
  
 CGPROGRAM
 // Upgrade NOTE: excluded shader from OpenGL ES 2.0 because it does not contain a surface program or both vertex and fragment programs.
-#pragma target 3.0
+#pragma target 3.5
 #pragma exclude_renderers gles
 #pragma surface surf NoLighting keepalpha
 #pragma vertex vert

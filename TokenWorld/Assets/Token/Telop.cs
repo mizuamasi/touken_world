@@ -8,11 +8,22 @@ public class Telop : SingletonMonoBehaviour<Telop>
 {
 	[SerializeField] GameObject _telop;
 	[SerializeField] string _telop_path;
+	[SerializeField, Tooltip("教材ではOFFにして、下の画像リストを使う。")]
+	bool _loadExternalImages = true;
+	[SerializeField] List<Sprite> _images = new List<Sprite>();
 
 	List<Sprite> _sprite_list = new List<Sprite>();
 
 	// Start is called before the first frame update
 	void Start() {
+		foreach (Sprite sprite in _images) {
+			if (sprite != null) _sprite_list.Add(sprite);
+		}
+		if (!_loadExternalImages) return;
+		if (!Directory.Exists(_telop_path)) {
+			Debug.LogWarning("Telop image folder is unavailable; image telops are disabled.", this);
+			return;
+		}
 		string[] files = Directory.GetFiles(_telop_path, "*.png");
 		foreach(string path in files) {
 			_sprite_list.Add(ReadImage.ReadSprite(path));
@@ -25,6 +36,7 @@ public class Telop : SingletonMonoBehaviour<Telop>
     }
 
 	public void StartTelop(Vector3 pos) {
+		if (_sprite_list.Count == 0) return;
 		SEManager.Instance.Play("telop");
 		pos.y = transform.position.y;
 		pos.z = transform.position.z;
