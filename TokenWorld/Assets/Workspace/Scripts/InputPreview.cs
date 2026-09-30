@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 展示の4画面（床・正面・左・右）を並べて表示する。床の映像と入力座標は同じ矩形で扱い、
-// Gameビューのサイズ変更にも追従する。
+// Gameビューのサイズ変更にも追従する。Play 前の編集中も表示し、入力と操作は Play 中だけ受け付ける。
+[ExecuteAlways]
 [DefaultExecutionOrder(-600)]
 [RequireComponent(typeof(InteractionInput))]
 public class InputPreview : MonoBehaviour
@@ -54,13 +55,24 @@ public class InputPreview : MonoBehaviour
         UpdateViewport();
     }
 
-    void OnDisable() { if (input != null) input.PositionUpdated.RemoveListener(RecordPoint); }
-    void OnDestroy() { if (uiFont != null) Destroy(uiFont); }
+    void OnDisable()
+    {
+        if (input != null) input.PositionUpdated.RemoveListener(RecordPoint);
+        // 編集中はスクリプトの再読み込みでも無効化されるため、ここでフォントを解放する。
+        if (uiFont != null)
+        {
+            if (Application.isPlaying) Destroy(uiFont); else DestroyImmediate(uiFont);
+            uiFont = null;
+            textStyle = null;
+        }
+    }
+
     void RecordPoint(Vector3 point) { points.Add(point); }
 
     void Update()
     {
         points.Clear();
+        if (!Application.isPlaying) return;
         Cursor.visible = true;
         if (Input.GetKeyDown(KeyCode.H)) showPanel = !showPanel;
         if (Input.GetKeyDown(KeyCode.V)) showAllScreens = !showAllScreens;
@@ -80,7 +92,9 @@ public class InputPreview : MonoBehaviour
 
     void UpdateViewport()
     {
-        float top = showPanel ? (Screen.width / UiScale < TwoRowPanelWidth ? 124 : 92) * UiScale : 0;
+        // 編集中のパネルは見出しの1行だけ。
+        float panelRows = !Application.isPlaying ? 44 : Screen.width / UiScale < TwoRowPanelWidth ? 124 : 92;
+        float top = showPanel ? panelRows * UiScale : 0;
         var area = new Rect(0, top, Screen.width, Mathf.Max(1, Screen.height - top - 26 * UiScale));
         layout = ComputeLayout(area, Aspect(previewTexture, 1), Aspect(wallTexture, 1), Aspect(sideTexture, 0.5f),
             showAllScreens && AllScreensAvailable);
@@ -131,6 +145,7 @@ public class InputPreview : MonoBehaviour
     {
         if (textStyle != null) return;
         uiFont = Font.CreateDynamicFontFromOSFont(new[] { "Yu Gothic UI", "Meiryo", "Arial" }, 15);
+        uiFont.hideFlags = HideFlags.HideAndDontSave;
         textStyle = new GUIStyle(GUI.skin.label) { font = uiFont, fontSize = 14, alignment = TextAnchor.MiddleLeft };
         textStyle.normal.textColor = new Color(0.84f, 0.89f, 0.92f);
         titleStyle = new GUIStyle(textStyle) { fontSize = 19, fontStyle = FontStyle.Bold };
@@ -183,6 +198,9 @@ public class InputPreview : MonoBehaviour
     void OnGUI()
     {
         if (input == null) return;
+        bool playing = Application.isPlaying;
+        // 編集中は Update が毎フレーム呼ばれないため、描画のたびに配置を求める。
+        if (!playing) UpdateViewport();
         PrepareStyles();
         GUI.depth = -100;
         Fill(new Rect(0, 0, Screen.width, Screen.height), new Color(0.025f, 0.04f, 0.055f));
@@ -219,8 +237,16 @@ public class InputPreview : MonoBehaviour
             Caption(layout.floor, "床（池）", "入力はこの画面だけ  ·  " + Describe(previewTexture, "", 1));
         }
         if (showPanel)
-        {
             GUI.Label(new Rect(16, 8, 340, 30), "TOKENWORLD  /  INPUT PREVIEW", titleStyle);
+        if (!playing)
+        {
+            if (showPanel) GUI.Label(new Rect(Mathf.Max(350, panelWidth - 270), 10, 255, 26), "編集中  ·  表示のみ", textStyle);
+            GUI.Label(new Rect(16, panelHeight - 25, panelWidth - 32, 24), "Play を押すと床の映像で入力できる  /  4画面・床のみは InputPreview の Show All Screens で切り替え", hintStyle);
+            GUI.matrix = previousMatrix;
+            return;
+        }
+        if (showPanel)
+        {
             string status = input.Paused ? "入力停止中" : input.CurrentMode == InteractionInput.Mode.Sensor ? "実機センサー" : "センサーなしで実行中";
             GUI.Label(new Rect(Mathf.Max(350, panelWidth - 270), 10, 255, 26), status + "  ·  検出 " + input.ActivePointCount, textStyle);
             bool sensor = input.CurrentMode == InteractionInput.Mode.Sensor;

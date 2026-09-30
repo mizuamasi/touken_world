@@ -22,14 +22,32 @@ git clone --branch archive/unity2019.3.15f1 --single-branch https://github.com/m
 Build Settings の先頭は制作用の `Assets/Workspace/Scenes/Workspace.unity`。
 初回起動時にはパッケージの解決とアセットのインポートが行われる。
 
-## 制作を始める
+## 使い方（制作シーン）
 
-Windowsでメニューの **TokenWorld > Open development scene** からシーンを開き、Playする。
-制作シーンは `Assets/Workspace/Scenes/Workspace.unity`。マウス操作と1〜3点の自動入力に対応し、URGセンサーや外部設定ファイルなしで動作する。
-Game ビューには床・正面・左・右の4画面を部屋の中から見た並びで表示し、入力は床の映像で行う。`V` で床のみの表示に切り替える。
-`InteractionInput` の座標通知 `PositionUpdated`、クリア通知 `InputCleared`、全検出位置 `Positions` に独自の出力を接続する。`Workspace > Content` の `PrefabOutput` は任意のPrefabを指定すると使える。素材・スクリプトの配置先は任意。接続方法は [I/O接続リファレンス](CONTENT_WORKFLOW.md) を参照。
+作品は制作シーン `Assets/Workspace/Scenes/Workspace.unity` で作る。URGセンサーや外部設定ファイルは不要。展示は床を含む4画面で、制作シーンではそれを見ながら作業できる。
 
-制作シーンは外部画像の読み込み、季節の自動切り替え、Spout出力を初期状態では無効にしている。季節は操作パネルから変更できる。
+1. Unity Hub で `TokenWorld/` を開き、メニューの **TokenWorld > Open development scene** を選ぶ。
+2. **Game ビュー**を見る。上段に左・正面（滝）・右、下段に床（池）が並ぶ。部屋の中から見た並びで、床の上端が正面の壁の側。Play 前から表示される。
+3. **Scene ビュー**では、床と正面のカメラに映る範囲が色付きの枠と名前で表示され、隅の **4画面プレビュー** に各画面の今の映像が出る。物を置いたり動かしたりすると、どの画面にどう映るかをその場で確認できる。
+4. **Play** を押し、床の映像をマウスで押す・ドラッグする。人が床に立った位置として作品が反応する。正面や左右での反応もそのまま見られる。
+5. 作品をつなぐ。検出位置は `Workspace` の **InteractionInput** から届く。`Workspace > Content` の **PrefabOutput** に Prefab を入れると、押した位置にそれが出る。独自のスクリプトのつなぎ方は [I/O接続リファレンス](CONTENT_WORKFLOW.md) を参照。
+
+![制作シーンの Game ビュー（Play 中、自動入力3点）](docs/workspace-preview.jpg)
+
+| やりたいこと | 操作 |
+| --- | --- |
+| マウス入力 / 自動入力（1〜3点）に切り替える | Play 中に `1` / `2` |
+| 入力を止める・再開する | Play 中に `Space` |
+| 季節を変える | Play 中に `B` |
+| 4画面 / 床のみの表示を切り替える | Play 中に `V`。Play 前は `Workspace` の **InputPreview > Show All Screens** |
+| 操作パネルを隠す・出す | Play 中に `H` |
+| Scene ビューの枠を消す・出す | Scene ビュー上部のツールバーにある Gizmos の切り替えボタン（マウスを乗せると「Toggle visibility of all Gizmos in the Scene view」と出る） |
+| 4画面プレビューを隠す・出す | Scene ビューのタブを右クリックして **Overlay Menu** を開き、**4画面プレビュー** を切り替える |
+
+Game ビューが小さいと各画面も小さくなる。Game ビューのタブを最大化（`Shift+Space`）するか、Play 中に `H` でパネルを隠す。
+キー操作は Game ビューを選んだ状態で行う。入力は床の画面だけで、正面・左右は表示のみ。
+
+制作シーンは外部画像の読み込み、季節の自動切り替え、Spout出力を初期状態では無効にしている。
 
 ## 展示用シーン
 
