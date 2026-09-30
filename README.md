@@ -26,6 +26,7 @@ Build Settings の先頭は制作用の `Assets/Workspace/Scenes/Workspace.unity
 
 Windowsでメニューの **TokenWorld > Open development scene** からシーンを開き、Playする。
 制作シーンは `Assets/Workspace/Scenes/Workspace.unity`。マウス操作と1〜3点の自動入力に対応し、URGセンサーや外部設定ファイルなしで動作する。
+Game ビューには床・正面・左・右の4画面を部屋の中から見た並びで表示し、入力は床の映像で行う。`V` で床のみの表示に切り替える。
 `InteractionInput` の座標通知 `PositionUpdated`、クリア通知 `InputCleared`、全検出位置 `Positions` に独自の出力を接続する。`Workspace > Content` の `PrefabOutput` は任意のPrefabを指定すると使える。素材・スクリプトの配置先は任意。接続方法は [I/O接続リファレンス](CONTENT_WORKFLOW.md) を参照。
 
 制作シーンは外部画像の読み込み、季節の自動切り替え、Spout出力を初期状態では無効にしている。季節は操作パネルから変更できる。

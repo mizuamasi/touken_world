@@ -96526,9 +96526,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   input: {fileID: 1589540545}
   previewTexture: {fileID: 8400000, guid: eaf4ae987b19adc4fb434109b2a60b7d, type: 2}
+  wallTexture: {fileID: 8400000, guid: 9138d130ee890bc46932ec7aacb88378, type: 2}
+  sideTexture: {fileID: 8400000, guid: a045362c2110b6045b59ff9e658d9fc7, type: 2}
   interactions: {fileID: 600466941}
   backgrounds: {fileID: 2010616914}
   showPanel: 1
+  showAllScreens: 1
 --- !u!114 &1589540545
 MonoBehaviour:
   m_ObjectHideFlags: 0

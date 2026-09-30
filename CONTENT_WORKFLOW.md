@@ -7,9 +7,24 @@ Unity **2022.3.62f2** で `TokenWorld/` を開きます。以下の `Assets/` �
 メニューの **TokenWorld > Open development scene** で `Assets/Workspace/Scenes/Workspace.unity` を開き、Play します。
 Hierarchy の **Workspace** に入力とプレビュー、子の **Content** に出力を置いています。作品の素材・スクリプトは任意のフォルダで管理できます。
 
+## 4画面の表示
+
+展示は床を含む4画面です。Game ビューには部屋の中から見た並びで表示します。上段が左・正面・右、下段が床です。床は正面の下に置き、床の上端が展示で正面の壁に接する辺です。大きさは実寸の比率ではありません。
+
+| 画面 | 描画先 | 解像度 | 展示の Spout 名 | 主な映像 |
+| --- | --- | --- | --- | --- |
+| 床（池） | `MainTex` | 1920×1080 | `MainSpout` | 水面・鯉・波紋。入力を受ける唯一の画面 |
+| 正面（滝） | `WallTex` | 3158×850 | `WallSpout` | 滝と草木。床で反応した鯉が滝を登る |
+| 左 | `SideTex` の左半分 | 1920×890 | `SideSpout`（左右で共通） | 季節の画像 |
+| 右 | `SideTex` の右半分 | 1920×890 | `SideSpout`（左右で共通） | 季節の画像 |
+
+描画先は `Assets/RowTexter/` の RenderTexture です。左右は 3840×890 の `SideTex` 1枚に並べて描き、1つの Spout で送ります。Spout 名は `SpoutObj` の子の GameObject 名です。
+正面・左・右は表示のみで、クリックしても入力になりません。`V` で4画面と床のみの表示を切り替えます。床のみの表示では床が大きくなります。
+制作シーンの `kaesu` の **Telop** は外部画像を読み込まず、Images も空のため、鯉が滝を登っても正面のテロップは出ません。確認する場合は Images に Sprite を登録します。
+
 ## 入力とプレビュー
 
-初期状態はマウス入力です。Game ビューの映像内を左ボタンで押す・ドラッグすると、水色の十字で検出位置を表示します。
+初期状態はマウス入力です。Game ビューの床の映像内を左ボタンで押す・ドラッグすると、水色の十字で検出位置を表示します。
 自動入力では1〜3点を動かせます。どちらも URG 実機や外部設定ファイルは不要です。
 
 | 操作 | キー |
@@ -17,6 +32,7 @@ Hierarchy の **Workspace** に入力とプレビュー、子の **Content** に
 | マウス / 自動に切り替える | `1` / `2` |
 | 入力を止める・再開する | `Space` |
 | 季節を変える | `B` |
+| 4画面 / 床のみの表示を切り替える | `V` |
 | 操作パネルを表示・非表示にする | `H` |
 
 キー操作時は Game ビューにフォーカスします。**クリア**は検出位置と追跡状態を消し、入力を停止します。再開は **入力を再開** または `Space` です。
@@ -55,4 +71,4 @@ Hierarchy の **Workspace** に入力とプレビュー、子の **Content** に
 Play を停止し、`Workspace` の **InteractionInput > Mode** を **Sensor** にしてから Play します。対応する URG 実機、ネットワーク接続、IP / Port と位置・回転・縮尺・検出範囲の調整が必要です。実機での通信・校正は未検証です。
 制作シーンは外部画像の読み込み、季節の自動切替、Spout出力を初期状態で無効にしています。既存の展示用シーンは `Assets/Scenes/Main.unity` です。
 
-反応が出ない場合は、入力の停止状態、Reaction Prefab、Position Updated の登録先を確認します。コンパイルエラーは **Window > General > Console** で確認できます。
+反応が出ない場合は、入力の停止状態、Reaction Prefab、Position Updated の登録先を確認します。4画面が並ばない場合は、`Workspace` の **InputPreview** の Wall Texture と Side Texture を確認します。コンパイルエラーは **Window > General > Console** で確認できます。
